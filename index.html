@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Марковский процесс</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Подключение Chart.js -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 90%;
+            margin: 0 auto;
+            text-align: center;
+        }
+        #charts {
+            display: flex;
+            justify-content: space-between;
+            width:500;
+        }
+
+        #results {
+            margin-top: 20px;
+            text-align: left;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .result-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Моделирование Марковского процесса с поглощающим состоянием</h1>
+        <div class="charts">
+            <canvas id="chart1"></canvas>
+            <canvas id="chart2"></canvas>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Генерация вероятностного распределения
+        function distGenerate(size) {
+            let container = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+            const sum = container.reduce((a, b) => a + b, 0);
+            return container.map(elem => elem / sum);
+        }
+
+        // Функция для получения случайного состояния по заданному распределению
+        function randomState(probVector) {
+            const r = Math.random();
+            let s = probVector[0];
+            for (let k = 0; k < probVector.length; k++) {
+                if (r < s) {
+                    return k;
+                }
+                s += probVector[k + 1] || 0;
+            }
+            return null; // На всякий случай
+        }
+
+        // Произведение вектора на матрицу
+        function vecMulMat(vec, mat) {
+            const result = [];
+            for (let j = 0; j < mat[0].length; j++) {
+                let sum = 0;
+                for (let k = 0; k < vec.length; k++) {
+                    sum += vec[k] * mat[k][j];
+                }
+                result.push(sum);
+            }
+            return result;
+        }
+
+        // Основная логика моделирования
+        function simulateMarkovChain() {
+            const n = 30; // общее количество состояний
+            const tMax = 100; // максимальное количество шагов
+
+            let pVector = distGenerate(n); // начальное распределение
+            const sVector = []; // контейнер для состояний
+            const pMatrix = Array.from({ length: n }, () => distGenerate(n)); // матрица переходов
+
+            for (let t = 0; t < tMax; t++) {
+                sVector.push(randomState(pVector)); // сохраняем текущее состояние
+                pVector = vecMulMat(pVector, pMatrix); // обновляем распределение
+            }
+
+            return sVector;
+        }
+
+        // Подсчет частоты состояний
+        function calculateStateFrequencies(sVector) {
+            const frequencies = Array(30).fill(0);
+            sVector.forEach(state => {
+                frequencies[state]++;
+            });
+            return frequencies.map((freq, index) => ({ state: index, frequency: freq }));
+        }
+
+        // Визуализация первого графика (состояния системы)
+        function createStateChart(sVector) {
+            const ctx1 = document.getElementById('chart1').getContext('2d');
+            const time = Array.from({ length: sVector.length }, (_, i) => i); // временные шаги
+
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: time, // временные шаги на оси X
+                    datasets: [{
+                        label: 'Состояния системы',
+                        data: sVector, // состояния на оси Y
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 2, // Размер точек
+                        pointHoverRadius: 5, // Размер точки при наведении
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)', // Цвет точки
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Время'
+                            },
+                            grid: {
+                                display: true, // Включение сетки
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Состояние'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 29, // так как у нас 30 состояний
+                            grid: {
+                                display: true, // Включение сетки
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return `Шаг: ${tooltipItem.label}, Состояние: ${tooltipItem.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Визуализация второго графика (частота состояний)
+        function createFrequencyChart(frequencies) {
+            const ctx2 = document.getElementById('chart2').getContext('2d');
+            const labels = frequencies.map(freq => `Состояние ${freq.state}`);
+
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Частота состояний',
+                        data: frequencies.map(freq => freq.frequency),
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Состояние'
+                            },
+                            grid: {
+                                display: true,
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Частота'
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Функция для вывода результатов
+        function displayResults(stateFrequencies, avgAbsorptionTime) {
+            const resultDiv = document.getElementById("results");
+            resultDiv.innerHTML = '<h2>Частота состояний</h2>'; // Заголовок секции
+
+            stateFrequencies.forEach(freq => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.textContent = `Состояние ${freq.state}: ${freq.frequency}`;
+                resultDiv.appendChild(resultItem);
+            });
+
+            const avgItem = document.createElement('div');
+            avgItem.className = 'result-item';
+            avgItem.textContent = `Среднее время до поглощения: ${avgAbsorptionTime.toFixed(2)}`;
+            resultDiv.appendChild(avgItem);
+        }
+
+        // Подсчет среднего времени до поглощения
+        function calculateAbsorptionTime() {
+            const numSimulations = 100;
+            let totalStepsToAbsorption = 0;
+
+            for (let i = 0; i < numSimulations; i++) {
+                const sVector = simulateMarkovChain();
+                const absorptionStep = sVector.findIndex(state => state === 0); // Предположим, что 0 - поглощающее состояние
+                totalStepsToAbsorption += absorptionStep === -1 ? 100 : absorptionStep; // Если не найдено, берем максимальное число шагов
+            }
+
+            return totalStepsToAbsorption / numSimulations;
+        }
+
+        // Инициализация и запуск
+        (function init() {
+            const sVector = simulateMarkovChain(); // Симуляция процесса
+            const stateFrequencies = calculateStateFrequencies(sVector); // Подсчет частоты состояний
+            const avgAbsorptionTime = calculateAbsorptionTime(); // Подсчет среднего времени до поглощения
+            createStateChart(sVector); // Отображение графика состояний
+            createFrequencyChart(stateFrequencies); // Отображение графика частот
+            displayResults(stateFrequencies, avgAbsorptionTime); // Вывод результатов
+        })();
+    </script>
+</body>
+</html>
