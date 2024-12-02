@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volterra-Lotka Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Симуляция модели Вольтерра-Лотки</h1>
+    <canvas id="populationChart" width="800" height="400"></canvas>
+    <canvas id="phaseChart" width="400" height="400"></canvas>
+
+    <script>
+        // Начальные параметры
+        const xInit = 40;    // Начальная численность жертв
+        const yInit = 9;     // Начальная численность хищников
+        const alpha = 0.1;   // Скорость размножения жертв
+        const beta = 0.02;   // Коэффициент взаимодействия
+        const delta = 0.01;  // Эффективность преобразования еды в потомство
+        const gamma = 0.1;   // Скорость смертности хищников
+        const rX = 5;        // Пополнение популяции жертв
+        const xMax = 100;    // Максимальный размер популяции жертв
+        const yMax = 50;     // Максимальный размер популяции хищников
+        const tMax = 200;    // Время моделирования
+        const dt = 0.1;      // Шаг времени
+
+        // Функция моделирования
+        function simulatePredatorPrey(xInit, yInit, alpha, beta, delta, gamma, rX, xMax, yMax, tMax, dt) {
+            const t = [];
+            const x = [];
+            const y = [];
+            
+            t.push(0);
+            x.push(xInit);
+            y.push(yInit);
+            
+            for (let time = dt; time <= tMax; time += dt) {
+                const dx = alpha * x[x.length - 1] - beta * x[x.length - 1] * y[y.length - 1] + rX;
+                const dy = delta * x[x.length - 1] * y[y.length - 1] - gamma * y[y.length - 1];
+
+                const newX = Math.min(Math.max(x[x.length - 1] + dx * dt, 0), xMax);
+                const newY = Math.min(Math.max(y[y.length - 1] + dy * dt, 0), yMax);
+
+                t.push(time);
+                x.push(newX);
+                y.push(newY);
+            }
+
+            return { t, x, y };
+        }
+
+        // Запуск симуляции
+        const { t, x, y } = simulatePredatorPrey(xInit, yInit, alpha, beta, delta, gamma, rX, xMax, yMax, tMax, dt);
+
+        // График численностей
+        const ctx1 = document.getElementById('populationChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: t,
+                datasets: [
+                    {
+                        label: 'Популяция добычи (x)',
+                        data: x,
+                        borderColor: 'green',
+                        borderWidth: 2,
+                        fill: false
+                    },
+                    {
+                        label: 'Популяция хищников (y)',
+                        data: y,
+                        borderColor: 'red',
+                        borderWidth: 2,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Time' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Population Size' }
+                    }
+                }
+            }
+        });
+
+        // Фазовая траектория
+        const ctx2 = document.getElementById('phaseChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'Фазовая траектория',
+                        data: x.map((val, index) => ({ x: val, y: y[index] })),
+                        borderColor: 'purple',
+                        backgroundColor: 'purple',
+                        showLine: true,
+                        pointRadius: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Популяция добычи (x)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Популяция хищников (y)' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

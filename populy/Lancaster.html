@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>War Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>War Simulation</h1>
+    <canvas id="armyChart" width="800" height="400"></canvas>
+
+    <script>
+        // Начальные параметры
+        const AInit = 1000;  // Начальная численность армии A
+        const BInit = 1200;  // Начальная численность армии B
+        const alpha = 0.1;   // Эффективность армии A
+        const beta = 0.08;   // Эффективность армии B
+        const rA = 5;        // Скорость пополнения армии A
+        const rB = 3;        // Скорость пополнения армии B
+        const maxA = 1500;   // Максимальный размер армии A
+        const maxB = 1500;   // Максимальный размер армии B
+        const tMax = 100;    // Общее время моделирования
+        const dt = 0.1;      // Шаг времени
+
+        // Функция для моделирования
+        function simulateWar(AInit, BInit, alpha, beta, rA, rB, maxA, maxB, tMax, dt) {
+            const t = [];
+            const A = [];
+            const B = [];
+
+            t.push(0);
+            A.push(AInit);
+            B.push(BInit);
+
+            for (let time = dt; time <= tMax; time += dt) {
+                const dA = -beta * B[B.length - 1] + rA;
+                const dB = -alpha * A[A.length - 1] + rB;
+
+                const newA = Math.min(Math.max(A[A.length - 1] + dA * dt, 0), maxA);
+                const newB = Math.min(Math.max(B[B.length - 1] + dB * dt, 0), maxB);
+
+                t.push(time);
+                A.push(newA);
+                B.push(newB);
+
+                // Если одна из армий уничтожена, бой заканчивается
+                if (newA <= 0 || newB <= 0) {
+                    while (t.length < tMax / dt) {
+                        t.push(time + dt);
+                        A.push(newA);
+                        B.push(newB);
+                    }
+                    break;
+                }
+            }
+
+            return { t, A, B };
+        }
+
+        // Запуск симуляции
+        const { t, A, B } = simulateWar(AInit, BInit, alpha, beta, rA, rB, maxA, maxB, tMax, dt);
+
+        // Построение графика
+        const ctx = document.getElementById('armyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: t,
+                datasets: [
+                    {
+                        label: 'Army A',
+                        data: A,
+                        borderColor: 'blue',
+                        borderWidth: 2,
+                        fill: false
+                    },
+                    {
+                        label: 'Army B',
+                        data: B,
+                        borderColor: 'red',
+                        borderWidth: 2,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Time' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Army Size' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

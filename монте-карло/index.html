@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monte Carlo Sequence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        label, button, p {
+            margin-bottom: 10px;
+            display: block;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Monte Carlo Sequence</h1>
+        <label for="trials">Number of Trials:</label>
+        <input type="number" id="trials" min="1" value="10000">
+
+        <button onclick="calculateSequence()">Run Monte Carlo</button>
+
+        <h3>Results:</h3>
+        <p><strong>Longest Sequence Length:</strong> <span id="sequence-length">-</span></p>
+        <label for="sequence">Longest Sequence:</label>
+        <textarea id="sequence" readonly></textarea>
+    </div>
+
+    <script>
+        function calculateSequence() {
+            const trials = parseInt(document.getElementById('trials').value);
+            if (isNaN(trials) || trials < 1) {
+                alert('Please enter a valid number of trials.');
+                return;
+            }
+
+            function monteCarloSequence(trials) {
+                function generateSequence() {
+                    const sequence = [];
+                    const usedIntervals = new Set();
+
+                    for (let n = 1; n < 1000; n++) {
+                        const intervalSize = 1 / n;
+                        const x_n = Math.random();
+                        const intervalIndex = Math.floor(x_n / intervalSize);
+
+                        if (usedIntervals.has(intervalIndex)) {
+                            break;
+                        }
+
+                        usedIntervals.add(intervalIndex);
+                        sequence.push(x_n);
+                    }
+                    return sequence;
+                }
+
+                let longestSequence = [];
+                for (let i = 0; i < trials; i++) {
+                    const sequence = generateSequence();
+                    if (sequence.length > longestSequence.length) {
+                        longestSequence = sequence;
+                    }
+                }
+
+                return longestSequence;
+            }
+
+            const longestSequence = monteCarloSequence(trials);
+            document.getElementById('sequence-length').textContent = longestSequence.length;
+            document.getElementById('sequence').value = longestSequence.join(', ');
+        }
+    </script>
+</body>
+</html>
